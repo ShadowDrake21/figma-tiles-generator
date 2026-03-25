@@ -1,0 +1,352 @@
+@import url("https://fonts.googleapis.com/css2?family=Poppins:ital,wght@0,100;0,200;0,300;0,400;0,500;0,600;0,700;0,800;0,900;1,100;1,200;1,300;1,400;1,500;1,600;1,700;1,800;1,900&display=swap");
+
+* {
+  box-sizing: border-box;
+  font-family: "Poppins", sans-serif;
+}
+
+.container {
+  border-radius: 8px;
+  padding: 24px;
+  background: rgb(255, 255, 255);
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  height: 100%;
+  color: rgb(48, 48, 48);
+}
+
+.profileRow {
+  display: flex;
+  flex-direction: row;
+  gap: 16px; 
+  justify-content: center;
+  align-items: end;
+}
+
+.basicSettings {
+  display: flex;
+  gap: 12px;
+  padding: 12px 0;
+  width: 100%;
+  justify-content: space-between;
+  align-items: center;
+  flex-direction: column;
+  align-self: flex-start;
+
+  .sheet {
+    display: flex;
+    flex-direction: row;
+    gap: 16px;
+    width: 100%;
+
+    input {
+      width: 100%;
+    }
+    
+    > .settingsItem:first-child {
+      flex: 2 1 0%;
+      min-width: 0;
+    }
+    > .settingsItem:nth-child(2) {
+      flex: 1 1 0%;
+      min-width: 0;
+    }
+  }
+
+  .profileRow {
+    display: flex;
+    gap: 12px;
+    align-items: center;
+    width: 100%;
+
+    button {
+      padding: 6px 10px;
+      border-radius: 6px;
+      border: 1px solid #ccc;
+      background: white;
+      cursor: pointer;
+    }
+  }
+
+  .secondRow {
+    display: flex;
+    flex-direction: row;
+    gap: 16px;
+    width: 100%;
+    margin-top: 8px;
+
+    input {
+      width: 100%;
+    }
+  }
+
+  .colors {
+    display: flex;
+    flex-direction: row;
+    gap: 16px;
+
+    input {
+      width: 100%;
+    }
+
+    label {
+      margin: 0;
+    }
+  }
+}
+
+.centeredContent {
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-start;
+  align-items: center;
+  flex: 1;
+  width: 100%;
+}
+
+.linesSettings {
+  display: flex;
+  gap: 32px;
+  justify-content: flex-start;
+  align-items: center;
+  padding: 16px;
+  width: 100%;
+  padding: 12px 0;
+}
+
+.moveLabel {
+  position: relative !important;
+  display: block !important;
+  bottom: -6px !important;
+  padding: 0 12px;
+  margin-left: 50% !important;
+  transform: translateX(-50%) !important;
+  font-size: 10px !important;
+}
+
+label {
+  user-select: none;
+  white-space: nowrap;
+  display: block;
+  pointer-events: none;
+  transition: all 0.25s;
+  font-size: 12px;
+  position: relative;
+  margin-left: 8px;
+  color: #505050;
+  width: fit-content;
+  background: white;
+
+  &:has(+ input[type="text"]) {
+    bottom: -50%;
+  }
+
+  &:has(+ input[type="text"]:focus) {
+    @extend .moveLabel;
+  }
+}
+
+input {
+  &[type="text"] {
+    height: 30px;
+    padding: 0 4px;
+    border-radius: 8px;
+    border: 1px solid rgb(48, 48, 48);
+  }
+
+  &:focus {
+    outline: none;
+  }
+}
+
+.settingsItem {
+  height: 50px;
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+}
+
+.keywordSettings {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  padding: 12px 0;
+  width: 100%;
+}
+
+.actionButtons {
+  display: flex;
+  gap: 24px;
+  width: 100%;
+
+  button {
+    width: 100%;
+    border: none;
+    padding: 12px 20px;
+    border-radius: 8px;
+    cursor: pointer;
+    font-weight: 600;
+
+    &:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+    }
+  }
+}
+
+.notification {
+  z-index: 1000;
+
+  &.revealing .notificationContent {
+    transform: scale(0.8) translateZ(0);
+    opacity: 0;
+    animation: justMeReveal 0.3s cubic-bezier(0.25, 0.5, 0.5, 0.9) forwards;
+    transition: none;
+    will-change: transform, opacity;
+    backface-visibility: hidden;
+  }
+
+  &.revealed .notificationContent {
+    transform: scale(1) translateZ(0);
+    opacity: 1;
+  }
+
+  &.closing .notificationContent {
+    animation: justMeDismiss 0.3s cubic-bezier(0.25, 0.5, 0.5, 0.9) forwards;
+    transition: none;
+    will-change: transform, opacity;
+    backface-visibility: hidden;
+  }
+
+  .notificationContent {
+    margin: 8px;
+
+    backdrop-filter: blur(1.5px);
+
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+
+    border-radius: 8px;
+
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: flex-start;
+    text-align: center;
+
+    transform: scale(1) translateZ(0);
+    transition: none;
+    backface-visibility: hidden;
+    opacity: 1;
+
+    .currentMessage {
+      position: relative;
+      top: 10%;
+      font-size: 18px;
+      font-weight: 600;
+      text-align: center;
+    }
+
+    .logStack {
+      position: relative;
+      top: 10%;
+      display: flex;
+      height: 100%;
+      flex-direction: column;
+      align-items: center;
+
+      .logStackItem {
+        transition: all 0.3s ease;
+
+        color: #383838;
+      }
+
+      @for $i from 1 through 20 {
+        .logLevel#{$i} {
+          font-size: #{16 - ($i * 0.25)}px;
+          opacity: #{0.95 - ($i * 0.045)};
+          margin: 0 #{$i * 8}px;
+          transform: translateY(#{($i - 1) * 2}px);
+        }
+      }
+    }
+
+    .closeButton {
+      position: absolute;
+      top: 16px;
+      right: 16px;
+      font-size: 24px;
+      border: none;
+      background: transparent;
+      cursor: pointer;
+      width: 40px;
+      height: 40px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #333;
+      font-size: 16px;
+      z-index: 1001;
+
+      &:hover {
+        background: rgba(32, 32, 32, 0.1);
+      }
+
+      &:active {
+        background: rgba(32, 32, 32, 0.1);
+      }
+    }
+  }
+
+  &.success .notificationContent {
+    background: rgba(212, 237, 218, 0.75);
+    border: 1px solid #c3e6cb;
+    color: #155724;
+  }
+
+  &.error .notificationContent {
+    background: rgba(248, 215, 218, 0.75);
+    border: 1px solid #f5c6cb;
+    color: #721c24;
+  }
+
+  &.working .notificationContent {
+    background: rgba(255, 243, 205, 0.75);
+    border: 1px solid #ffeaa7;
+    color: #856404;
+  }
+
+  &.info .notificationContent {
+    background: rgba(209, 236, 241, 0.75);
+    border: 1px solid #bee5eb;
+    color: #0c5460;
+  }
+}
+
+@keyframes justMeReveal {
+  0% {
+    transform: scale(0.8) translateZ(0);
+    opacity: 0;
+  }
+  100% {
+    transform: scale(1) translateZ(0);
+    opacity: 1;
+  }
+}
+
+@keyframes justMeDismiss {
+  0% {
+    transform: scale(1) translateZ(0);
+    opacity: 1;
+  }
+  100% {
+    transform: scale(0.8) translateZ(0);
+    opacity: 0;
+  }
+}
