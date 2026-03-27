@@ -1,12 +1,11 @@
 import React, { useState, useEffect } from 'react'
-import reactLogo from './assets/react.svg'
-import Icon from './components/Icon'
-import Input from './components/Input'
-import Button from './components/Button'
+import styles from './styles.module.css' // Import CSS module for scoped styles
 import './App.css' // Import CSS for styles
 import { defaultFormSettings, FormSettings } from './config/defaultFormSettings'
 import { useNotificationLog } from './hooks/useNotificationLog'
 import { logMessage, MESSAGES } from './config/messages'
+import SettingsForm from './components/SettingsForm'
+import Notification from './components/Notification'
 
 const App: React.FC = () => {
 	const [formSettings, setFormSettings] = useState(defaultFormSettings)
@@ -171,54 +170,194 @@ const App: React.FC = () => {
 				profiles: p
 			}
 		}, "*")
-		
 	}
 
-	const createRectangles = (count: number) => {
-		window.parent.postMessage(
-			{
-				pluginMessage: {
-					type: 'CREATE_RECTANGLES',
-					count,
-				},
-			},
-			'*',
-		)
+	const handleSaveProfile = () => {
+		const key = formSettings.spreadsheetColumns.join(",")
+
+		if (!key) {
+			showNotification(MESSAGES.VALIDATION.MISSING_SPREADSHEET_COLUMNS_NAMES, "error", false, true, false)
+			return;
+		}
+
+		const p = {...profiles, [key]: formSettings}
+		    console.log("handleSaveProfile key, profiles before save:", key, profiles);
+
+		saveProfilesToStorage(p)
+		setSelectedProfile(key)
+
+		window.parent.postMessage({
+			pluginMessage: {
+				type: "SAVE_SETTINGS",
+				settings: formSettings
+		}}, "*")
+		showTemporaryNotification(`Saved settings for ${key}`, "success", 1000)
 	}
 
-	useEffect(() => {
-		const handleMessage = (event: MessageEvent) => {
-			const message = event.data.pluginMessage
-			if (message?.type === 'POST_NODE_COUNT') {
-				setNodeCount(message.count)
-			}
-		}
+	const handleSelectProfile = (key: string) => {
+		if (key === "__new__") {
+			setFormSettings(defaultFormSettings)
+			setSelectedProfile("__new__")
 
-		window.addEventListener('message', handleMessage)
-		return () => {
-			window.removeEventListener('message', handleMessage)
+			return
+	}
+
+	const s = profiles[key]
+
+	if (s) {
+		setFormSettings(s)
+		setSelectedProfile(key)
+		showTemporaryNotification(`Loaded settings for ${key}`, "info", 700)
+	}
+}
+
+const handleDeleteProfile = (key: string) => {
+	if (!profiles[key]) return;
+	const copy = { ...profiles }
+	delete copy[key]
+
+	saveProfilesToStorage(copy)
+	showTemporaryNotification(`Deleted profile ${key}`, "success", 800)
+
+	if(formSettings.spreadsheetColumns.join(",") === key) setFormSettings(defaultFormSettings)
+	if(selectedProfile === key) setSelectedProfile("")
+}
+
+const handleGenerate = async () => {
+	const {spreadsheetColumns} = formSettings
+
+	if (!spreadsheetColumns || spreadsheetColumns.length === 0) {
+		showNotification(MESSAGES.VALIDATION.MISSING_SPREADSHEET_COLUMNS_NAMES, "error", false, true, false)
+		return;
+	}
+
+	setIsLoading(true)
+	clearLog()
+	showNotification(MESSAGES.PROCESS.FETCHING_DATA, "working", true, false)
+
+	try {
+	console.log("Fetching data for", { spreadsheetColumns });
+	const baseUrl = import.meta.env.VITE_DYNAMIC_BASE_URL;
+	const url = `${baseUrl}/static/category_titles/`
+	const res = await fetch(url, {
+		method: "GET",
+		headers: {
+			 Accept: "application/json",
+          "Content-Type": "application/json",
+          skip_zrok_interstitial: "1",
+          Origin: "https://figma.com",
+          "User-Agent": "Figma-Plugin",
 		}
-	}, [])
+	})
+
+	if (!res.ok) {
+		let errorMessage = `Failed to fetch data (${res.status})`
+		throw new Error(errorMessage)
+	}
+
+	const json = await res.json()
+	if (!json.data || Object.keys(json.data).length === 0) {
+		throw new Error(MESSAGES.ERRORS.NO_DATA_FOUND(spreadsheetColumns))
+	}
+
+	showNotification(MESSAGES.PROCESS.DATA_FETCHED, "success", true, false)
+
+	window.parent.postMessage({
+		pluginMessage: {
+			type: "CREATE_FRAMES",
+			data: json.data,
+			settings: formSettings,
+			pageName: "Category Tiles"
+		}
+	}, "*")
+	} catch (error) {
+		logMessage.generateError(error)
+		setIsLoading(false)
+
+		let message = "Uknown error occurred"
+	
+		if (error instanceof Error) message = error.message
+		else if (typeof error === "string") message = error
+
+		showNotification(message, "error", false, true, false)
+	}
+}
+
+const handleClearStorage = () => {
+	window.parent.postMessage({
+		pluginMessage: {
+			type: "CLEAR_STORAGE"
+		}
+	}, "*")
+}
+
+const handleRecacheSheet = async () => {
+	const {spreadsheetColumns} = formSettings
+
+	setIsLoading(true)
+	showNotification("Recaching sheet data...", "working", true, false)
+	
+	try {
+	const baseUrl = import.meta.env.VITE_DYNAMIC_BASE_URL;
+	const url = `${baseUrl}/static/category_titles/force-refresh`
+	const res = await fetch(url, {
+		method: "GET",
+		headers: {
+			 Accept: "application/json",
+					"Content-Type": "application/json",
+					skip_zrok_interstitial: "1",
+					Origin: "https://figma.com",
+					"User-Agent": "Figma-Plugin",
+		}
+	})
+
+	if (!res.ok) {
+		throw new Error(`Failed to recache sheet (${res.status})`)
+	}
+	
+	const json = await res.json()
+	setIsLoading(false)
+
+	const message = json.message || "Sheet recached successfully!"
+	const isError = message.toLowerCase().includes("error")
+	showNotification(message, isError ? "error" : "success", false, true, false)
+}
+	catch (error) {
+		setIsLoading(false)
+		let message = "Failed to recache sheet"
+		if (error instanceof Error) message = error.message
+		else if (typeof error === "string") message = error
+		showNotification(message, "error", false, true, false)
+	}
+}
 
 	return (
-		<div className="container">
-			<div className="banner">
-				<Icon svg="plugma" size={38} />
-				<Icon svg="plus" size={24} />
-				<img src={reactLogo} width="44" height="44" alt="Svelte logo" />
-			</div>
-
-			<div className="field create-rectangles">
-				<Input
-					type="number"
-					value={rectCount}
-					onChange={(e: React.ChangeEvent<HTMLInputElement>) => setRectCount(Number(e.target.value))}
+		<div className={styles.container}>
+			<SettingsForm formSettings={formSettings}
+			onChange={handleInputChange}
+			onGenerate={handleGenerate}
+			onRecacheSheet={handleRecacheSheet}
+			onClearStorage={handleClearStorage}
+			onDeleteProfile={handleDeleteProfile}
+			onSaveProfile={handleSaveProfile}
+				isLoading={isLoading}
+				profiles={profiles}
+				selectedProfile={selectedProfile}
+				onSelectProfile={(k: string) => handleSelectProfile(k)}
 				/>
-				<Button onClick={() => createRectangles(rectCount)}>Create Rectangles</Button>
-			</div>
-			<div className="field node-count">
-				<span>{nodeCount} nodes selected</span>
-			</div>
+				{
+					(notification.text || notification.isClosing) && (
+						<Notification 
+						text={notification.text}
+						type={notification.type}
+						onClose={hideNotification}
+						disableClose={notification.disableClose}
+						isClosing={notification.isClosing}
+						isRevealing={notification.isRevealing}
+						hasRevealed={notification.hasRevealed}
+						logHistory={logHistory}
+						/>)
+				}
 		</div>
 	)
 }

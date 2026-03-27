@@ -1,6 +1,7 @@
 import { FormSettings } from "../config/defaultFormSettings";
 import { FONT_WEIGHTS } from "../config/typography";
 import styles from "../styles.module.scss";
+import Button from "./Button";
 import Dashboard from "./Dashboard";
 import FormField from "./FormField";
 
@@ -129,6 +130,21 @@ const SettingsForm: React.FC<SettingsFormProps> = ({
           newColumns.splice(index, 1);
           onChange("spreadsheetColumns", newColumns);
         }}
+        />
+      </div>
+       <div id="actionButtons" className={styles.actionButtons}>
+        <Button text="Generate" onClick={onGenerate} disabled={isLoading} />
+        <Button
+          text="Clear Storage"
+          onClick={onClearStorage}
+          disabled={isLoading}
+        />
+        <Button
+          text="Recache Sheet"
+          onClick={onRecacheSheet}
+          disabled={isLoading}
+          background="#750000"
+          color="white"
         />
       </div>
     </div>
