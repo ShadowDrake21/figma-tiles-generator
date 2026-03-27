@@ -14,7 +14,7 @@ export const MESSAGES = {
     FRAME_CREATED: (country: string) => `Created frame for ${country}`,
     FRAME_UNCHANGED: (country: string) => `No changes for ${country} (skipped)`,
     FRAME_UPDATED: (country: string) => `Updated frame for ${country}`,
-    MISSING_TRANSLATION: (country: string) => `${country} has no translation - creating placeholder frame`,
+    MISSING_TRANSLATION: (country: string, category: string) => `${country} has no ${category} translation - creating placeholder frame`,
     PROCESSING_COMPLETE: (
       created: number,
       missing: number = 0,
