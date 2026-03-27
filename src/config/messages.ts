@@ -1,6 +1,6 @@
 export const MESSAGES = {
   VALIDATION: {
-    SPREADSHEET_COLUMNS_NAME: "You have not choosen any spreadsheet columns. Please select at least one column to proceed."
+    MISSING_SPREADSHEET_COLUMNS_NAMES: "You have not choosen any spreadsheet columns. Please select at least one column to proceed."
   },
 
   PROCESS: {
