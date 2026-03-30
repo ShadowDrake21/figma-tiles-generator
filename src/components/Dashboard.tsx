@@ -24,7 +24,7 @@ const handleClick = (item : string, index: number) => {
 
 return (
   <div className={styles.dashboard}>
-    {items.length === 0} ? (
+    {items.length === 0 ? (
       <p className={styles.emptyMessage}>{emptyMessage}</p>
     ) : (
       <div className={styles.dashboardList}>
@@ -47,7 +47,7 @@ return (
           ))
         }
       </div>
-    )
+    )}
   </div>
 )
 }

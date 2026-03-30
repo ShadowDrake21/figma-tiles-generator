@@ -20,7 +20,8 @@ export const MESSAGES = {
       missing: number = 0,
       missingCountries: string[] = [],
       updated: number = 0,
-      skipped: number = 0
+      skipped: number = 0,
+      removed: number = 0
     ) => {
       const parts: string[] = []
       parts.push(`Created ${created}`)
@@ -28,9 +29,13 @@ export const MESSAGES = {
       if (skipped) parts.push(`Skipped ${skipped}`)
       if (missing) 
         parts.push(`Missing ${missing}${missingCountries.length ? ` (${missingCountries.join(", ")})` : ""}`)
+      if (removed) parts.push(`Removed ${removed}`)
       return parts.join(" | ") + " frame(s)"
     }
   },
+
+  // wysokość tekstu i kafelki
+  // pętla żeby znaleźć wszystkie kafelki tego kraju i zmniejszyć tekst font size jeśli jest za duży
 
   STORAGE: {
     SETTINGS_SAVED: "Settings saved successfully!",

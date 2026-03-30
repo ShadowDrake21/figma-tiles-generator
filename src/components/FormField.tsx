@@ -1,7 +1,6 @@
 import React from "react";
 import styles from "../styles.module.scss";
 
-
 interface FormFieldProps {
   label: string;
   type: "text" | "color" | "select";
@@ -42,7 +41,16 @@ const FormField: React.FC<FormFieldProps> = ({
         );
       case "select":
         return (
-          <select value={value} onChange={(e) => onChange(e.target.value)}>
+          <select
+            value={value}
+            onChange={(e) => onChange(e.target.value)}
+            className={styles.selectWithEllipsis}
+          >
+            {label === "Categories" && (
+              <option value="" disabled>
+                — Select a category —
+              </option>
+            )}
             {options.map((option) => {
               if (typeof option === "string" || typeof option === "number") {
                 return (
@@ -67,7 +75,7 @@ const FormField: React.FC<FormFieldProps> = ({
       <label className={labelOnTop ? styles.moveLabel : ""}>{label}</label>
       {renderInput()}
     </div>
-  )
+  );
 };
 
 export default FormField;

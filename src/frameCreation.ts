@@ -1,7 +1,7 @@
 import { FormSettings } from "./config/defaultFormSettings";
 import { MESSAGES } from "./config/messages";
 
-const solidPaint = figma.utils.solidPaint;
+const solidPaint = figma.util.solidPaint;
 
 const post = (type: string, extra: Record<string, any> = {}) =>
   figma.ui.postMessage({ type, ...extra });
@@ -9,12 +9,24 @@ const post = (type: string, extra: Record<string, any> = {}) =>
 const hasText = (value: string) => !!value && value.trim().length > 0;
 
 const ensureFont = async (family: string, style: string) => {
-  const font: FontName = { family, style }
-  await figma.loadFontAsync(font)
-  return font
-}
+  const font: FontName = { family, style };
+  await figma.loadFontAsync(font);
+  return font;
+};
 
-const buildTextNode = async ({content, baseFont, fontSize, lineHeight, fill}: {content: string, baseFont: FontName, fontSize: number, lineHeight: {value: number; unit: "PIXELS" | "PERCENT"}, fill: string}) => {
+const buildTextNode = async ({
+  content,
+  baseFont,
+  fontSize,
+  lineHeight,
+  fill,
+}: {
+  content: string;
+  baseFont: FontName;
+  fontSize: number;
+  lineHeight: { value: number; unit: "PIXELS" | "PERCENT" };
+  fill: string;
+}) => {
   const node = figma.createText();
   await ensureFont(baseFont.family, baseFont.style);
   node.fontName = baseFont;
@@ -22,13 +34,13 @@ const buildTextNode = async ({content, baseFont, fontSize, lineHeight, fill}: {c
   node.fontSize = fontSize;
   node.textAlignHorizontal = "CENTER";
   node.leadingTrim = "CAP_HEIGHT";
-  node.lineHeight = {value: lineHeight.value, unit: "PIXELS"};
+  node.lineHeight = { value: lineHeight.value, unit: "PIXELS" };
   node.fills = [solidPaint(fill)];
   return node;
-}
+};
 
 const computeSignature = (lines: string[], s: FormSettings) => {
-  JSON.stringify([
+  return JSON.stringify([
     lines,
     s.width,
     s.height,
@@ -38,202 +50,246 @@ const computeSignature = (lines: string[], s: FormSettings) => {
     s.lineHeight,
     s.fontWeight,
     s.spreadsheetColumns,
-    s.autoSaveProfiles
-  ])
-}
+    s.autoSaveProfiles,
+  ]);
+};
 
+const asInt = (raw: string | undefined, fallback: number) => {
+  const n = parseInt(String(raw ?? "").trim(), 10);
+  return Number.isFinite(n) ? n : fallback;
+};
 
 export const handleFrameCreation = async (
   data: Record<string, string[]>,
+  countrySlugs: string[],
   settings: FormSettings,
-  pageName: string
+  pageName: string,
 ) => {
   const {
-  width, 
-  height,
-  backgroundColor,
-  textColor,
-  fontSize,
-  lineHeight,
-  fontWeight,
-  spreadsheetColumns,
-  autoSaveProfiles
+    width,
+    height,
+    backgroundColor,
+    textColor,
+    fontSize,
+    lineHeight,
+    fontWeight,
+    spreadsheetColumns,
+    autoSaveProfiles,
   } = settings;
 
-  const totalCountries = Object.keys(data).length;
-  post("FRAME_PROCESSING_STARTED", {
-    message: MESSAGES.PROCESS.FRAME_PROCESSING_STARTED(totalCountries),
-    totalCount: totalCountries
-  })
+  const tileHeight = asInt(height, 50);
+  const tileWidth = asInt(width, 299);
+  const numCategories = spreadsheetColumns.length;
+  const numCountries = countrySlugs.length;
 
-  let targetPage = figma.root.children.find(p => p.name === pageName) as PageNode | undefined;
+  if (numCategories === 0) {
+    post("ERROR", { message: "No categories selected" });
+    return;
+  }
+
+  const totalTiles = numCountries * numCategories;
+
+  post("FRAME_PROCESSING_STARTED", {
+    message: `Creating ${totalTiles} tiles in ${numCategories} columns...`,
+    totalCount: totalTiles,
+  });
+
+  let targetPage = figma.root.children.find((p) => p.name === pageName) as
+    | PageNode
+    | undefined;
+
   if (!targetPage) {
     targetPage = figma.createPage();
     targetPage.name = pageName;
-    post("PAGE_CREATED", {message: MESSAGES.PROCESS.PAGE_CREATED(pageName)})
+    post("PAGE_CREATED", { message: MESSAGES.PROCESS.PAGE_CREATED(pageName) });
   } else {
-    post ("PAGE_SWITCHED", {message: MESSAGES.PROCESS.PAGE_SWITCHED(pageName)})
+    post("PAGE_SWITCHED", {
+      message: MESSAGES.PROCESS.PAGE_SWITCHED(pageName),
+    });
   }
   await figma.setCurrentPageAsync(targetPage);
 
-  let currentY = 0
-  let processedCount = 0
-  let createdCount = 0
-  let updatedCount = 0
-  let skippedCount = 0
+  let createdCount = 0;
+  let updatedCount = 0;
+  let skippedCount = 0;
+  let removedCount = 0;
+  const missingTranslations: { category: string; countryCode: string }[] = [];
 
-  const missingTranslations: {category: string, countryCode: string}[] = []
+  const horizontalGap = 40;
+  const verticalGap = 80;
 
-  for (const countryCode in data) {
-    processedCount++;
-    const row = data[countryCode]
-    const lines = [row[0] || "", row[1] || ""]
+  const countryKeys = Object.keys(data);
 
-    post("COUNTRY_PROCESSING", {
-      message: MESSAGES.PROCESS.COUNTRY_PROCESSING(countryCode, processedCount, totalCountries),
-      currentCountry: countryCode,
-      progress: Math.round((processedCount / totalCountries) * 100)
-    })
+  const expectedFrameNames = new Set<string>();
 
-    const frameName = countryCode.toLowerCase()
-    let frame = targetPage.children.find(
-      (n) => n.name === frameName && n.type === "FRAME"
-    ) as FrameNode | undefined;
+  // Outer loop: Categories (Columns)
+  for (let catIndex = 0; catIndex < numCategories; catIndex++) {
+    const categoryName = spreadsheetColumns[catIndex];
+    const columnX = catIndex * (tileWidth + horizontalGap);
 
-    const newSignature = computeSignature(lines, settings);
+    // Inner loop: Countries (Rows)
+    let currentY = 0;
+    console.log("data", data);
+    for (let i = 0; i < numCountries; i++) {
+      const numericKey = countryKeys[i];
+      const realSlug = countrySlugs[i] || numericKey;
 
-    const existed = !!frame;
-    if (frame) {
-      const previousSignature = frame.getPluginData("signature");
-      if(previousSignature === newSignature) {
-        skippedCount++;
-        post("FRAME_UNCHANGED", {
-          message: MESSAGES.PROCESS.FRAME_UNCHANGED(countryCode),
-          country: countryCode
+      const row = data[numericKey] || [];
+      const translation = row[catIndex] || "";
+
+      const processedCount = catIndex * numCountries + i + 1;
+
+      post("COUNTRY_PROCESSING", {
+        message: `Processing ${realSlug} → ${categoryName} (${processedCount}/${totalTiles})`,
+        currentCountry: realSlug,
+        progress: Math.round((processedCount / totalTiles) * 100),
+      });
+
+      // Unique frame name: e.g. "at-sofas"
+      const cleanCategory = categoryName
+        .toLowerCase()
+        .replace(/&/g, "and")
+        .replace(/[^a-z0-9]/gi, "_")
+        .replace(/_+/g, "_")
+        .replace(/^-|-$|_$/g, "");
+      const frameName = `${realSlug.toLowerCase()}_${cleanCategory}`;
+
+      expectedFrameNames.add(frameName);
+
+      let frame = targetPage.children.find(
+        (n) => n.name === frameName && n.type === "FRAME",
+      ) as FrameNode | undefined;
+
+      const lines = [translation];
+      const newSignature = computeSignature(lines, settings);
+
+      const existed = !!frame;
+      if (frame) {
+        const previousSignature = frame.getPluginData("signature");
+        if (previousSignature === newSignature) {
+          skippedCount++;
+          frame.x = columnX;
+          frame.y = currentY;
+          continue;
         }
-        )
-        currentY = frame.y + frame.height + 128
-        continue;
+      } else {
+        frame = figma.createFrame();
+        frame.name = frameName;
       }
-    } else {
-      frame = figma.createFrame();
-      frame.name = frameName;
-    }
 
-    const exportSettings: ExportSettings[] = [
-      {
-        format: "PNG",
+      // Fixed size + centered text
+      frame.resize(tileWidth, tileHeight);
+      frame.layoutMode = "VERTICAL";
+      frame.counterAxisSizingMode = "FIXED";
+      frame.primaryAxisSizingMode = "FIXED";
+      frame.fills = [solidPaint(backgroundColor)];
+
+      const textHeight = asInt(lineHeight, 30);
+      const dynamicPadding = Math.max(
+        8,
+        Math.floor((tileHeight - textHeight) / 2),
+      );
+
+      frame.paddingTop = dynamicPadding;
+      frame.paddingBottom = dynamicPadding;
+      frame.paddingLeft = 20;
+      frame.paddingRight = 20;
+
+      frame.counterAxisAlignItems = "CENTER";
+      frame.primaryAxisAlignItems = "CENTER";
+
+      frame.x = columnX;
+      frame.y = currentY;
+
+      const exportSettings: ExportSettings[] = [{ format: "PNG" }];
+      frame.exportSettings = exportSettings;
+
+      const existingTextNodes = frame.children.filter(
+        (n) => n.type === "TEXT",
+      ) as TextNode[];
+
+      let desiredContent = translation.trim()
+        ? translation
+        : `${realSlug} - Missing ${categoryName}`;
+
+      let desiredLines = [{ content: desiredContent }];
+
+      if (existingTextNodes.length > 1) {
+        existingTextNodes.slice(1).forEach((n) => n.remove());
       }
-    ]
 
-    frame.exportSettings = exportSettings;
+      const mainFont = { family: "Poppins", style: fontWeight } as FontName;
 
-    frame.resize(width, height);
-    frame.layoutMode = "VERTICAL";
-    frame.counterAxisSizingMode = "FIXED";
-    frame.primaryAxisSizingMode= "AUTO";
-    frame.fills = [solidPaint(backgroundColor)];
-    frame.paddingTop = 5;
-    frame.paddingBottom = 5;
-    frame.paddingLeft = 20;
-    frame.paddingRight = 20;
-    frame.counterAxisAlignItems = "CENTER";
-    frame.primaryAxisAlignItems = "CENTER";
-    frame.x = 0
-    frame.y = currentY
-
-    const existingTextNodes = frame.children.filter(n => n.type === "TEXT") as TextNode[];
-
-    let desiredLines: {content: string}[] = 
-    [
-      {content: lines[0]},
-    ].filter(l => hasText(l.content));
-
-    if (desiredLines.length === 0) {
-      missingTranslations.push({category: "Country Name", countryCode});
-
-      post("MISSING_TRANSLATION", 
-        {
-          message: MESSAGES.PROCESS.MISSING_TRANSLATION(countryCode, "Country Name"),
-          country: countryCode,
-          category: "Country Name"
-        }
-      )
-
-      desiredLines = [
-        {
-          content: `${countryCode} - Missing translation for Category`,
-        }
-      ]
-    }
-
-    if (existingTextNodes.length > desiredLines.length) {
-      existingTextNodes.slice(desiredLines.length).forEach(n => n.remove());
-    }
-
-    for (let i = 0; i < desiredLines.length; i++) {
-      const {content} = desiredLines[i]
-
-      const mainFont = {family: "Popping", style: fontWeight} as FontName
-
-      const maybeExisting = existingTextNodes[i]
-      if(maybeExisting) {
-        if (maybeExisting.characters !== content) {
+      if (existingTextNodes[0]) {
+        const node = existingTextNodes[0];
+        if (node.characters !== desiredContent) {
           await ensureFont(mainFont.family, mainFont.style);
-          maybeExisting.fontName = mainFont;
-          maybeExisting.characters = content;
-          maybeExisting.fontSize = fontSize;
-          maybeExisting.lineHeight = {value: asInt(lineHeight, 30), unit: "PIXELS"};
-          maybeExisting.fills = [solidPaint(textColor)];
+          node.fontName = mainFont;
+          node.characters = desiredContent;
+          node.fontSize = asInt(fontSize, 30);
+          node.lineHeight = { value: asInt(lineHeight, 30), unit: "PIXELS" };
+          node.fills = [solidPaint(textColor)];
         }
       } else {
         const ln = await buildTextNode({
-          content,
+          content: desiredContent,
           baseFont: mainFont,
           fontSize: asInt(fontSize, 30),
-          lineHeight: {value: asInt(lineHeight, 30), unit: "PIXELS"},
-          fill: textColor
-      })
-      frame.appendChild(ln);
+          lineHeight: { value: asInt(lineHeight, 30), unit: "PIXELS" },
+          fill: textColor,
+        });
+        frame.appendChild(ln);
+        ln.layoutAlign = "STRETCH";
+        ln.layoutSizingHorizontal = "FILL";
+      }
 
-      ln.layoutAlign = "STRETCH"
-      ln.layoutSizingHorizontal = "FILL"
-    }}
+      frame.setPluginData("signature", newSignature);
+      targetPage.appendChild(frame);
 
-    frame.setPluginData("signature", newSignature);
+      if (existed) updatedCount++;
+      else createdCount++;
 
-    targetPage.appendChild(frame)
-    if (existed) {
-      updatedCount++
-      post("FRAME_CREATED", {
-        message: MESSAGES.PROCESS.FRAME_UPDATED(countryCode),
-        country: countryCode
-      })
-    } else {
-      createdCount++;
-      post("FRAME_CREATED", 
-        {
-          message: MESSAGES.PROCESS.FRAME_CREATED(countryCode),
-          country: countryCode
-        }
-      )
+      currentY += tileHeight + verticalGap;
     }
-    currentY = frame.y + frame.height + 128;
+  }
+
+  post("CLEANUP_STARTED", { message: "Removing orphaned frames..." });
+
+  const framesToRemove: FrameNode[] = [];
+  targetPage.children.forEach((child) => {
+    if (child.type === "FRAME" && !expectedFrameNames.has(child.name)) {
+      framesToRemove.push(child as FrameNode);
+    }
+  });
+
+  framesToRemove.forEach((frame) => {
+    frame.remove();
+    removedCount++;
+  });
+
+  if (removedCount > 0) {
+    post("FRAMES_REMOVED", {
+      message: `Removed ${removedCount} orphaned frames`,
+      framesRemoved: removedCount,
+    });
   }
 
   const summary = MESSAGES.PROCESS.PROCESSING_COMPLETE(
     createdCount,
     missingTranslations.length,
-    missingTranslations.map(mt => `${mt.countryCode} (${mt.category})`),
+    missingTranslations.map((mt) => `${mt.countryCode} (${mt.category})`),
     updatedCount,
-    skippedCount
-  )
+    skippedCount,
+    removedCount,
+  );
+
   post("FRAMES_CREATED", {
     message: summary,
     framesCount: createdCount,
     framesUpdated: updatedCount,
     framesSkipped: skippedCount,
+    framesRemoved: removedCount,
     missingTranslations,
-    totalProcessed: processedCount
-  })
-}
+    totalProcessed: totalTiles,
+  });
+};

@@ -16,10 +16,25 @@
   color: rgb(48, 48, 48);
 }
 
+.settingsForm {
+  display: flex;
+  flex-direction: row;
+  gap: 24px;
+  width: 100%;
+
+  .leftPart {
+    flex: 1;
+    height: 100%;
+  }
+  .rightPart {
+    flex: 1
+  }
+}
+
 .profileRow {
   display: flex;
   flex-direction: row;
-  gap: 16px; 
+  gap: 16px;
   justify-content: center;
   align-items: end;
 }
@@ -43,12 +58,16 @@
     input {
       width: 100%;
     }
-    
+
     > .settingsItem:first-child {
-      flex: 2 1 0%;
+      flex: 1 1 0%;
       min-width: 0;
     }
-    > .settingsItem:nth-child(2) {
+    > .settingsItem:nth-child(2)  {
+      flex: 1 1 0%;
+      min-width: 0;
+    }
+    > .settingsItem:nth-child(3) {
       flex: 1 1 0%;
       min-width: 0;
     }
@@ -180,6 +199,7 @@ input {
   display: flex;
   gap: 24px;
   width: 100%;
+  margin-top: 25px;
 
   button {
     width: 100%;
@@ -192,6 +212,77 @@ input {
     &:disabled {
       opacity: 0.6;
       cursor: not-allowed;
+    }
+  }
+}
+
+.columnsSettings {
+  .firstLine {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    width: 100%;
+  }
+}
+
+.selectWithEllipsis {
+  width: 100%;
+  min-width: 100%;
+  max-height: 400px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+
+  option {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    max-width: 100%;
+  }
+}
+
+.dashboard {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  max-height: 400px;
+  padding: 12px;
+  height: 100%;
+  background-color: #ebebebee;
+  border-radius: 8px;
+  overflow-y: auto;
+  margin-bottom: 20px;
+
+  .emptyMessage {
+    color: #3b3b3b;
+    font-size: 16px;
+    font-style: italic;
+    text-align: center;
+  }
+
+  .dashboardList {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    width: 100%;
+
+    .dashboardItem {
+      padding: 8px 12px;
+      background: white;
+      border-radius: 6px;
+      border: 1px solid #ccc;
+      display: flex;
+      justify-content: space-between;
+
+      .removeIcon {
+        margin-left: auto;
+        color: #888;
+        cursor: pointer;
+
+        &:hover {
+          color: #555;
+        }
+      }
     }
   }
 }

@@ -1,4 +1,5 @@
 export type FormSettings = {
+  profileName: string;
   width: string;
   height: string;
   backgroundColor: string;
@@ -11,6 +12,7 @@ export type FormSettings = {
 };
 
 export const defaultFormSettings: FormSettings = {
+  profileName: "",
   width: "299",
   height: "50",
   backgroundColor: "#FF2F00",
@@ -18,6 +20,6 @@ export const defaultFormSettings: FormSettings = {
   fontSize: "30",
   lineHeight: "30",
   fontWeight: "Regular",
-  spreadsheetColumns: ["Sofas", "Chairs", "Tables", "Beds", "Storage"],
+  spreadsheetColumns: [],
   autoSaveProfiles: true,
 };

@@ -1,7 +1,8 @@
 import z from "zod";
 
 export const formSettingsSchema = z.object({
-   width: z.string().optional().default("299"),
+  profileName: z.string().optional().default(""),
+  width: z.string().optional().default("299"),
   height: z.string().optional().default("50"),
   backgroundColor: z
     .string()
