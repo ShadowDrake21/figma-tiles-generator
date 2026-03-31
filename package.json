@@ -23,6 +23,7 @@
 		"eslint-plugin-react-refresh": "^0.4.14",
 		"globals": "^15.11.0",
 		"plugma": "^1.2.10",
+		"sass": "^1.98.0",
 		"sass-embedded": "^1.98.0",
 		"typescript": "~5.6.2",
 		"typescript-eslint": "^8.11.0",
@@ -30,21 +31,21 @@
 	},
 	"plugma": {
 		"manifest": {
-			"id": "figma-tiles-generator-replace",
-			"name": "figma-tiles-generator",
+			"id": "tiles-generator-drake21",
+			"name": "Category Tiles Generator v1.0.0",
 			"main": "src/main.ts",
+			"documentAccess": "dynamic-page",
 			"ui": "src/ui.tsx",
 			"editorType": [
-				"figma",
-				"figjam"
+				"figma"
 			],
 			"networkAccess": {
 				"allowedDomains": [
-					"none"
+					"*"
 				],
+				"reasoning": "Allow all domains for development purposes",
 				"devAllowedDomains": [
-					"http://localhost:*",
-					"ws://localhost:9001"
+					"*"
 				]
 			}
 		}

@@ -10,11 +10,10 @@ import SettingsForm from "./components/SettingsForm";
 import Notification from "./components/Notification";
 
 const App: React.FC = () => {
-  const [formSettings, setFormSettings] = useState(defaultFormSettings);
+  const [formSettings, setFormSettings] = useState<FormSettings>({...defaultFormSettings, spreadsheetColumns: [],});
   const [profiles, setProfiles] = useState<Record<string, FormSettings>>({});
   const [selectedProfile, setSelectedProfile] = useState<string>("__new__");
   const [isLoading, setIsLoading] = useState(false);
-
 	const [translationsByCategory, setTranslationsByCategory] = useState<Record<string, Record<string, string>>>({})
 
   const {
@@ -62,7 +61,10 @@ const App: React.FC = () => {
 			setIsLoading(true);
 			try {
 				const data = await fetchCategoryData();
-				setTranslationsByCategory(data);
+
+        const filteredData = {...data}
+        delete filteredData["slug"]
+				setTranslationsByCategory(filteredData);
 				showTemporaryNotification("Category translations loaded from spreadsheet", "success", 1500);
 			} catch (error) {
 				logMessage.generateError(error);
@@ -75,6 +77,11 @@ const App: React.FC = () => {
 
 		initializeData();
 	}, [])
+
+  useEffect(() => {
+   setFormSettings({ ...defaultFormSettings, spreadsheetColumns: [] });
+    setSelectedProfile("__new__");
+  }, []);
 
   const handleInputChange = (field: string, value: any) => {
     setFormSettings((prev) => ({ ...prev, [field]: value} as FormSettings));
@@ -164,10 +171,6 @@ const App: React.FC = () => {
           break;
 
         case "SETTINGS_LOADED":
-          if (message.settings) {
-            logMessage.settingsLoaded(message.settings);
-            setFormSettings(message.settings);
-          }
           break;
 
         case "SETTINGS_SAVED":
@@ -426,7 +429,7 @@ const App: React.FC = () => {
         profiles={Object.keys(profiles)}
         selectedProfile={selectedProfile}
         onSelectProfile={(k: string) => handleSelectProfile(k)}
-				categoryOptions={Object.keys(translationsByCategory).sort((a, b) => a.localeCompare(b))}
+				categoryOptions={Object.keys(translationsByCategory).filter(cat => cat !== "slug").sort((a, b) => a.localeCompare(b))}
       />
       {(notification.text || notification.isClosing) && (
         <Notification
