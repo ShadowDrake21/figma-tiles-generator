@@ -1,51 +1,23 @@
-# figma-tiles-generator
+# Category Tiles Generator
 
-## Quickstart
+Basic category tiles generator made with [plugma](https://plugma.dev)
 
-This plugin was created with [Plugma](https://github.com/gavinmcfarland/plugma) using the [React](https://react.dev/) framework.
-
-### Requirements
-
--   [Node.js](https://nodejs.org/en)
--   [Figma desktop app](https://www.figma.com/downloads/)
-
-### Install and Import
-
-1. Install the dependencies and watch for changes while developing:
-
-    ```bash
-    npm install
-    npm run dev
-    ```
-
-2. Open the Figma desktop app and import the plugin:
-
-    - Open a file in Figma.
-    - Search for "Import plugin from manifest..." using the [Quick Actions](https://help.figma.com/hc/en-us/articles/360040328653-Use-shortcuts-and-quick-actions#Use_quick_actions) bar.
-    - Choose the `manifest.json` file from the `dist` folder.
-
-3. Manage `manifest` details from inside `package.json`.
-
-### Browser Preview
-
-Run this command to preview your plugin in the browser during development.
-
-```bash
-npm run preview
+Bun installation (powershell):
+```pwsh
+powershell -c "irm bun.sh/install.ps1|iex"
 ```
 
-_Make sure the plugin is open in the Figma desktop app._
+## Building
 
-### Before Publishing
+1. clone the repo ([https://github.com/kkazzann/figma--top-image-title-generator](https://github.com/ShadowDrake21/figma-tiles-generator))
+3. run "pnpm install" or "bun install"
+4. run "pnpm build" or "bun run build"
+5. code is bundled inside /dist/ -> main.js, manifest.js, index.html
 
-Before publishing your plugin, make sure to create a build. If not, it will still point to the dev server and won't work properly for users.
+## Installation
 
-```bash
-npm run build
-```
-
-Now you can publish the plugin from the Figma desktop app.
-
-### Advanced
-
-See the [Plugma docs](https://plugma.dev/docs) for further information.
+1. Open Figma **(Desktop version)** - [download here](https://www.figma.com/download/desktop/win), open any design file eg. copy of newsletter project.
+2. Open the menu in the top-left corner (figma logo).
+3. Follow this path: **Plugins** > **Development** > **Import plugin from manifest...**
+4. Select CT Generator's **manifest.json**
+5. Plugin should be ready to use.
